@@ -17,6 +17,7 @@ public class CloudManager : MonoBehaviour {
     private ComputeBuffer layerBuffer;
 
     public ComputeShader NoiseGenerator;
+    public ComputeShader LightIntensityCalculator;
 
     public Vector3 cloudSize;
     public Vector3 textureFitSize;
@@ -69,6 +70,7 @@ public class CloudManager : MonoBehaviour {
 
         CreateTextures();
         CalculateCloudData();
+        CalculateLightIntensity();
     }
 
     // Update is called once per frame
@@ -88,6 +90,7 @@ public class CloudManager : MonoBehaviour {
         }
         else if (Input.GetKeyDown(KeyCode.F)) {
             CalculateCloudData();
+            CalculateLightIntensity();
         }
     }
 
@@ -130,14 +133,16 @@ public class CloudManager : MonoBehaviour {
         textureSize.y = Mathf.CeilToInt(texSize * cloudSize.y / maxBoundSize);
         textureSize.z = Mathf.CeilToInt(texSize * cloudSize.z / maxBoundSize);
 
-        DensityTexture = new RenderTexture(textureSize.x, textureSize.y, 0);
+        DensityTexture = new RenderTexture(textureSize.x, textureSize.y,0);
         DensityTexture.volumeDepth = textureSize.z;
         DensityTexture.enableRandomWrite = true;
         DensityTexture.dimension = UnityEngine.Rendering.TextureDimension.Tex3D;
-        DensityTexture.graphicsFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.R32_SFloat;
+        DensityTexture.graphicsFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.R32G32_SFloat;
 
+        DensityTexture.useMipMap = true;
         DensityTexture.wrapMode = TextureWrapMode.Mirror;
         DensityTexture.filterMode = FilterMode.Trilinear;
+        DensityTexture.autoGenerateMips = false;
 
         DensityTexture.Create();
 
@@ -166,7 +171,52 @@ public class CloudManager : MonoBehaviour {
             NoiseGenerator.SetInt("layerCount", noiseLayers.Count);
             NoiseGenerator.SetVector("texSize", new Vector4(textureSize.x, textureSize.y, textureSize.z, 0));
 
-            NoiseGenerator.Dispatch(kernelIndex, texSize / 4, texSize / 4, texSize / 4);
+            NoiseGenerator.Dispatch(kernelIndex, texSize / 4 + 1, texSize / 4 + 1, texSize / 4 + 1);
+
+            //DensityTexture.GenerateMips();
+        }
+    }
+
+    private void CalculateLightIntensity() {
+        int kernelIndex = LightIntensityCalculator.FindKernel("LightMarch");
+
+        if(kernelIndex != -1) {
+            RenderTexture CopyTexture = new RenderTexture(DensityTexture.width, DensityTexture.height, 0, RenderTextureFormat.R16, 0);
+            CopyTexture.enableRandomWrite = true;
+            CopyTexture.volumeDepth = DensityTexture.volumeDepth;
+            CopyTexture.dimension = UnityEngine.Rendering.TextureDimension.Tex3D;
+            CopyTexture.Create();
+
+            LightIntensityCalculator.SetTexture(kernelIndex, "CloudData", DensityTexture);
+            LightIntensityCalculator.SetTexture(kernelIndex, "CopyTex", CopyTexture);
+            
+            LightIntensityCalculator.SetVector("_BoundMin",textureFitSize / 2.0f * -1.0f);
+            LightIntensityCalculator.SetVector("_BoundMax", textureFitSize / 2.0f);
+
+            LightIntensityCalculator.SetInts("_TexSize", textureSize.x, textureSize.y, textureSize.z);
+            
+            LightIntensityCalculator.SetVector("_LightDirection", lightObject.transform.forward);
+            LightIntensityCalculator.SetFloat("_LightMarchStepSize", LightMarchStepSize);
+            LightIntensityCalculator.SetFloat("_LightBaseIntensity", LightBaseIntensity);
+            LightIntensityCalculator.SetFloat("_LightAbsorptionCoefficient", LightAbsorptionCoefficient);
+
+            LightIntensityCalculator.SetFloat("_MinDensity", minDensity);
+            LightIntensityCalculator.SetFloat("_MaxDensity", maxDensity);
+
+            LightIntensityCalculator.Dispatch(kernelIndex, textureSize.x / 4 + 1, textureSize.y / 4 + 1, textureSize.z / 4 + 1);
+
+            kernelIndex = LightIntensityCalculator.FindKernel("CopyLightIntensity");
+
+            if(kernelIndex != -1) {
+                LightIntensityCalculator.SetInts("_TexSize", textureSize.x, textureSize.y, textureSize.z);
+
+                LightIntensityCalculator.SetTexture(kernelIndex, "_CloudData", DensityTexture);
+                LightIntensityCalculator.SetTexture(kernelIndex, "_CopyTex", CopyTexture);
+
+                LightIntensityCalculator.Dispatch(kernelIndex, textureSize.x / 4 + 1, textureSize.y / 4 + 1, textureSize.z / 4 + 1);
+            }
+
+            Destroy(CopyTexture);
         }
     }
 

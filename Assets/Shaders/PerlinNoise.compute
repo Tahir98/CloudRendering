@@ -9,7 +9,7 @@ struct PerlinNoiseLayer {
 	float opacity;
 };
 
-RWTexture3D<float> VolumeTex;
+RWTexture3D<float2> VolumeTex;
 StructuredBuffer<PerlinNoiseLayer> noiseLayers;
 uint layerCount;
 uint3 texSize;
@@ -138,6 +138,9 @@ float PerlinNoise(float x, float y, float z, int smoothness) {
 
 [numthreads(4, 4, 4)]
 void NoiseGenerator(uint3 id : SV_DispatchThreadID) {
+	if (any(id >= texSize))
+		return;
+	
 	float value = 0;
 	float texSizeMax = max(max(texSize.x, texSize.y), texSize.z);
 	for (uint i = 0; i < layerCount; i++) {
@@ -150,5 +153,7 @@ void NoiseGenerator(uint3 id : SV_DispatchThreadID) {
 
 	value = clamp(value, 0, 1);
 
-	VolumeTex[id.xyz] = value;
+	float2 data = VolumeTex[id.xyz];
+	data.x = value;
+	VolumeTex[id.xyz] = data;
 }

@@ -1,0 +1,97 @@
+#pragma kernel LightMarch
+#pragma kernel CopyLightIntensity
+
+Texture3D<float2> CloudData;
+RWTexture3D<float> CopyTex;
+
+float3 _BoundMin;
+float3 _BoundMax;
+
+int3 _TexSize;
+
+float3 _LightDirection;
+float _LightMarchStepSize;
+float _LightBaseIntensity;
+float _LightAbsorptionCoefficient;
+
+float _MinDensity;
+float _MaxDensity;
+
+SamplerState sampler_linear_repeat;
+
+//It controls given ray intersects with box (x: distance to box, y: distance inside box)
+float2 RayIntersectAABB(float3 rayOrigin, float3 rayDir, float3 boundsMin, float3 boundsMax) {
+
+	float3 invRayDir = 1.0f / rayDir;
+
+	float3 t0 = (boundsMin - rayOrigin) * invRayDir;
+	float3 t1 = (boundsMax - rayOrigin) * invRayDir;
+	float3 tmin = min(t0, t1);
+	float3 tmax = max(t0, t1);
+
+	float dstA = max(max(tmin.x, tmin.y), tmin.z);
+	float dstB = min(tmax.x, min(tmax.y, tmax.z));
+
+	float dstToBox = max(0, dstA);
+	float dstInsideBox = max(0, dstB - dstToBox);
+
+	return float2(dstToBox, dstInsideBox);
+}
+
+float3 GetPositionFromId(uint3 id) {
+	return _BoundMin + (_BoundMax - _BoundMin) * float3(id.x / (float) _TexSize.x, id.y / (float) _TexSize.y, id.z / (float) _TexSize.z);
+}
+
+float3 GetTextureCoordinate(float3 position) {
+	return (position - _BoundMin) / (_BoundMax - _BoundMin);
+}
+
+[numthreads(4, 4, 4)]
+void LightMarch(uint3 id : SV_DispatchThreadID) {
+	if (any(id >= _TexSize))
+		return;
+	
+	float3 startPosition = GetPositionFromId(id);
+	
+	float2 hit = RayIntersectAABB(startPosition, _LightDirection * -1, _BoundMin + float3(-10, 0, -10), _BoundMax + float3(10, 0, 10));
+	
+	float intensity = 1;
+	
+	if (hit.y > 0)
+	{
+		float offset = 0;
+		
+		[loop]
+		while (offset < hit.y) {
+			
+			float3 position = startPosition + _LightDirection * offset * -1.0f;
+			float3 texCoord = GetTextureCoordinate(position);
+
+			float density = CloudData.SampleLevel(sampler_linear_repeat, texCoord, 0).r;
+
+			if (density >= _MinDensity && density <= _MaxDensity) {  
+				intensity = intensity * exp(_LightMarchStepSize * _LightAbsorptionCoefficient * -0.01f);
+			}
+			
+			offset += _LightMarchStepSize;
+		}
+	}
+	
+	intensity = _LightBaseIntensity + (1.0f - _LightBaseIntensity) * intensity;
+	CopyTex[id] = intensity;
+}
+
+RWTexture3D<float2> _CloudData;
+Texture3D<float> _CopyTex;
+
+[numthreads(4, 4, 4)]
+void CopyLightIntensity(uint3 id : SV_DispatchThreadID) {
+	if (any(id >= _TexSize))
+		return;
+	
+	float2 value = _CloudData[id];
+	value.y = _CopyTex[id].x;
+	
+	_CloudData[id] = value;
+}
+

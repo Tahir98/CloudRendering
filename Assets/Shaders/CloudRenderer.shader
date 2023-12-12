@@ -62,8 +62,8 @@ Shader "Unlit/CloudRenderer"
             float _LightBaseIntensity;
             float _LightAbsorptionCoefficient;
 
-            float SampleDensity(float3 texCoord) {
-                return tex3D(_DensityTex, texCoord).r;
+            float2 SampleDensity(float3 texCoord) {
+                return tex3D(_DensityTex, texCoord).xy;
             }
 
             float3 GetTextureCoordinate(float3 position) {
@@ -162,7 +162,7 @@ Shader "Unlit/CloudRenderer"
 
                 float offset = 0;
                 
-                float noise = tex2D(_NoiseTex, input.screenPos.xy / _ScreenParams.xy * 32).r;
+                float noise = tex2D(_NoiseTex, input.screenPos.xy / _ScreenParams.xy * 128).r;
                 offset += noise * stepSize * -1.0f;
 
                 if (hit.y > 0) {
@@ -172,13 +172,12 @@ Shader "Unlit/CloudRenderer"
                         float3 position = cameraPos + viewDir * (hit.x + offset);
                         float3 texcoord = GetTextureCoordinate(position);
                     
-                        float density = SampleDensity(texcoord);
+                        float2 data  = SampleDensity(texcoord);
+                        float density = data.x;
+                        float lightIntensity = data.y;
 
                         if (InRange(density, _MinDensity, _MaxDensity)) {
-                            //float lightIntensity = 1;
-                            float lightIntensity = CalculateLightIntensity(position, _LightDirection * -1.0f, noise);
-                            lightIntensity = _LightBaseIntensity + lightIntensity / (1.0f - _LightBaseIntensity);
-
+                        
                             float3 color = float3(1, 1, 1) * lightIntensity;
                             outputColor = BlendFTB(outputColor, float4(color, density * opacity));
 
@@ -192,9 +191,10 @@ Shader "Unlit/CloudRenderer"
 
                 outputColor.a = clamp(outputColor.a / _OpacityThreshold, 0, 1);
 
-                if (outputColor.a < 0.05f)
+                if (outputColor.a < 0.01f)
                     clip(-1);
                 
+                outputColor.rgb /= outputColor.a;
                 outputColor = clamp(outputColor, 0, 1);
 
                 return outputColor;

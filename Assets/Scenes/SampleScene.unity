@@ -163,8 +163,9 @@ MonoBehaviour:
     scale: 92.9
     opacity: -0.08
   NoiseGenerator: {fileID: 7200000, guid: 906d049d6f4874041b8b3ea5e8ad62b7, type: 3}
+  LightIntensityCalculator: {fileID: 7200000, guid: 3cbb31e2067ee7340bdb5fdad2dc1bc4, type: 3}
   cloudSize: {x: 250, y: 50, z: 250}
-  textureFitSize: {x: 250, y: 50, z: 250}
+  textureFitSize: {x: 250, y: 250, z: 250}
   texSize: 256
   textureSize: {x: 0, y: 0, z: 0}
   textureOffset: {x: 0, y: 0, z: 0}
