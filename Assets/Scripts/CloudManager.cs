@@ -169,7 +169,7 @@ public class CloudManager : MonoBehaviour {
             NoiseGenerator.SetTexture(kernelIndex, "VolumeTex", DensityTexture);
             NoiseGenerator.SetBuffer(kernelIndex, "noiseLayers", layerBuffer);
             NoiseGenerator.SetInt("layerCount", noiseLayers.Count);
-            NoiseGenerator.SetVector("texSize", new Vector4(textureSize.x, textureSize.y, textureSize.z, 0));
+            NoiseGenerator.SetInts("texSize", textureSize.x, textureSize.y, textureSize.z);
 
             NoiseGenerator.Dispatch(kernelIndex, texSize / 4 + 1, texSize / 4 + 1, texSize / 4 + 1);
 
