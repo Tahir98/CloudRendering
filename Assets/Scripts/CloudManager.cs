@@ -133,13 +133,13 @@ public class CloudManager : MonoBehaviour {
         textureSize.y = Mathf.CeilToInt(texSize * cloudSize.y / maxBoundSize);
         textureSize.z = Mathf.CeilToInt(texSize * cloudSize.z / maxBoundSize);
 
-        DensityTexture = new RenderTexture(textureSize.x, textureSize.y,0);
+        DensityTexture = new RenderTexture(textureSize.x, textureSize.y,0, RenderTextureFormat.RG32, 0);
         DensityTexture.volumeDepth = textureSize.z;
         DensityTexture.enableRandomWrite = true;
         DensityTexture.dimension = UnityEngine.Rendering.TextureDimension.Tex3D;
-        DensityTexture.graphicsFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.R32G32_SFloat;
+        //DensityTexture.graphicsFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.R32G32_SFloat;
 
-        DensityTexture.useMipMap = true;
+        //DensityTexture.useMipMap = true;
         DensityTexture.wrapMode = TextureWrapMode.Mirror;
         DensityTexture.filterMode = FilterMode.Trilinear;
         DensityTexture.autoGenerateMips = false;
@@ -173,7 +173,7 @@ public class CloudManager : MonoBehaviour {
 
             NoiseGenerator.Dispatch(kernelIndex, texSize / 4 + 1, texSize / 4 + 1, texSize / 4 + 1);
 
-            //DensityTexture.GenerateMips();
+
         }
     }
 
@@ -217,6 +217,8 @@ public class CloudManager : MonoBehaviour {
             }
 
             Destroy(CopyTexture);
+
+            //DensityTexture.GenerateMips();
         }
     }
 

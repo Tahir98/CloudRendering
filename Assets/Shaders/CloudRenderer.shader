@@ -62,8 +62,9 @@ Shader "Unlit/CloudRenderer"
             float _LightBaseIntensity;
             float _LightAbsorptionCoefficient;
 
+
             float2 SampleDensity(float3 texCoord) {
-                return tex3D(_DensityTex, texCoord).xy;
+                return tex3D(_DensityTex, texCoord).rg;
             }
 
             float3 GetTextureCoordinate(float3 position) {
@@ -190,7 +191,7 @@ Shader "Unlit/CloudRenderer"
                 }
 
                 outputColor.a = clamp(outputColor.a / _OpacityThreshold, 0, 1);
-
+                
                 if (outputColor.a < 0.01f)
                     clip(-1);
                 
