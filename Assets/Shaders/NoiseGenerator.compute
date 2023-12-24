@@ -1,0 +1,46 @@
+#pragma kernel NoiseGenerator
+#include "NoiseFunctions.cginc"
+
+
+struct NoiseLayer {
+	float3 offset;
+	float scale;
+	float opacity;
+	int noiseType;
+};
+
+RWTexture3D<float2> VolumeTex;
+StructuredBuffer<NoiseLayer> noiseLayers;
+uint layerCount;
+uint3 texSize;
+
+[numthreads(4, 4, 4)]
+void NoiseGenerator(uint3 id : SV_DispatchThreadID) {
+	if (any(id >= texSize))
+		return;
+
+	float value = 0;
+	float texSizeMax = max(max(texSize.x, texSize.y), texSize.z);
+	for (uint i = 0; i < layerCount; i++) {
+		float3 position = noiseLayers[i].offset + float3(id.x, id.y, id.z) / texSizeMax * noiseLayers[i].scale;
+
+		float noise = 0;
+		
+		if (noiseLayers[i].noiseType == 0) {
+			noise = PerlinNoise(position.x, position.y, position.z, 2) + 0.5f;
+		}
+		else if (noiseLayers[i].noiseType == 1) {
+			noise = WorleyNoise(position.x, position.y, position.z);
+		}
+
+		value += max(noise * noiseLayers[i].opacity, -1);
+	}
+
+	value = clamp(value, 0, 1);
+
+	float2 data = VolumeTex[id.xyz];
+	data.x = value;
+	VolumeTex[id.xyz] = data;
+}
+
+

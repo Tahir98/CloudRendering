@@ -6,14 +6,15 @@ using UnityEngine;
 
 public class CloudManager : MonoBehaviour {
     [System.Serializable]
-    public struct PerlinNoiseLayer {
+    public struct NoiseLayer {
         public Vector3 offset;
         public float scale;
         [Range(-1, 1)]
         public float opacity;
+        public int noiseType;
     }
 
-    public List<PerlinNoiseLayer> noiseLayers;
+    public List<NoiseLayer> noiseLayers;
     private ComputeBuffer layerBuffer;
 
     public ComputeShader NoiseGenerator;
@@ -50,6 +51,8 @@ public class CloudManager : MonoBehaviour {
     public float LightBaseIntensity = 0.2f;
     public float LightAbsorptionCoefficient = 0.01f; 
 
+    public float exposure = 2;
+
     public GameObject lightObject;
 
     private MeshFilter meshFilter;
@@ -59,7 +62,7 @@ public class CloudManager : MonoBehaviour {
     public Texture2D simpleNoiseTex;
 
     void Start() {
-        layerBuffer = new ComputeBuffer(20, 5 * sizeof(float));
+        layerBuffer = new ComputeBuffer(20, 6 * sizeof(float));
 
         mesh = CreateMesh();
         meshFilter = gameObject.AddComponent<MeshFilter>();
@@ -88,7 +91,7 @@ public class CloudManager : MonoBehaviour {
         if (UpdateTextures) {
             CalculateCloudData();
         }
-        else if (Input.GetKeyDown(KeyCode.F)) {
+        if(Input.GetKeyDown(KeyCode.F)) {
             CalculateCloudData();
             CalculateLightIntensity();
         }
@@ -128,10 +131,10 @@ public class CloudManager : MonoBehaviour {
     }
 
     void CreateTextures() {
-        float maxBoundSize = Mathf.Max(Mathf.Max(cloudSize.x, cloudSize.y), cloudSize.z);
-        textureSize.x = Mathf.CeilToInt(texSize * cloudSize.x / maxBoundSize);
-        textureSize.y = Mathf.CeilToInt(texSize * cloudSize.y / maxBoundSize);
-        textureSize.z = Mathf.CeilToInt(texSize * cloudSize.z / maxBoundSize);
+        float maxBoundSize = Mathf.Max(Mathf.Max(textureFitSize.x, textureFitSize.y), textureFitSize.z);
+        textureSize.x = Mathf.CeilToInt(texSize * textureFitSize.x / maxBoundSize);
+        textureSize.y = Mathf.CeilToInt(texSize * textureFitSize.y / maxBoundSize);
+        textureSize.z = Mathf.CeilToInt(texSize * textureFitSize.z / maxBoundSize);
 
         DensityTexture = new RenderTexture(textureSize.x, textureSize.y,0, RenderTextureFormat.RG32, 0);
         DensityTexture.volumeDepth = textureSize.z;
@@ -202,6 +205,7 @@ public class CloudManager : MonoBehaviour {
 
             LightIntensityCalculator.SetFloat("_MinDensity", minDensity);
             LightIntensityCalculator.SetFloat("_MaxDensity", maxDensity);
+            LightIntensityCalculator.SetFloat("_Opacity", opacity);
 
             LightIntensityCalculator.Dispatch(kernelIndex, textureSize.x / 4 + 1, textureSize.y / 4 + 1, textureSize.z / 4 + 1);
 
@@ -245,54 +249,7 @@ public class CloudManager : MonoBehaviour {
         material.SetFloat("_LightMarchStepSize", LightMarchStepSize);
         material.SetFloat("_LightBaseIntensity", LightBaseIntensity);
         material.SetFloat("_LightAbsorptionCoefficient", LightAbsorptionCoefficient);
-    }
 
-    float SimplexNoise(float x, float y) {
-        //Coordinate skewing
-        float F = (Mathf.Sqrt(3) - 1.0f) / 2.0f;
-        float G = (1.0f - 1.0f / (Mathf.Sqrt(3))) / 2.0f;
-
-        float xf = x + (x + y) * F;
-        float yf = y + (x + y) * F;
-
-        int x0 = Mathf.FloorToInt(xf);
-        int y0 = Mathf.FloorToInt(yf);
-
-        int x1 = x0 + 1;
-        int y1 = y0 + 1;
-
-        float xi = x - x0;
-        float yi = y - y0;
-
-        //Simplicial subdivision
-        if (xi < yi) { //Sorting internal coordinates in decreasing order
-            float temp = xi;
-            xi = yi; 
-            yi = temp;
-        }
-
-
-
-        return 1;
-    }
-
-    void CreateSimpleNoiseTexture() {
-        int tSize = 512;
-        float scale = 16;
-        Vector2 offset = new Vector2(520.32f, 785.45f);
-
-        simpleNoiseTex = new Texture2D(tSize, tSize, TextureFormat.RFloat, false);
-        Color[] colors = new Color[tSize * tSize];
-
-        for (int i = 0; i < tSize; i++) {
-            for(int j = 0; j < tSize; j++) {
-                Vector2 position = offset + new Vector2(i / scale, j / scale);
-
-                colors[i * tSize + j].r =SimplexNoise(position.x, position.y); 
-            }
-        }
-
-        simpleNoiseTex.SetPixels(colors);
-        simpleNoiseTex.Apply();
+        material.SetFloat("_Exposure", exposure);
     }
 }

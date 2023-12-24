@@ -62,6 +62,7 @@ Shader "Unlit/CloudRenderer"
             float _LightBaseIntensity;
             float _LightAbsorptionCoefficient;
 
+            float _Exposure;
 
             float2 SampleDensity(float3 texCoord) {
                 return tex3D(_DensityTex, texCoord).rg;
@@ -140,6 +141,26 @@ Shader "Unlit/CloudRenderer"
                 return intensity;
             }
 
+            float3 uncharted2_tonemap_partial(float3 x)
+            {
+                float A = 0.15f;
+                float B = 0.50f;
+                float C = 0.10f;
+                float D = 0.20f;
+                float E = 0.02f;
+                float F = 0.30f;
+                return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
+            }
+
+            float3 tonemap_filmic(float3 color, float exposure)
+            {
+                float3 curr = uncharted2_tonemap_partial(color * exposure);
+            
+                float3 W = float3(11.2f, 11.2f, 11.2f);
+                float3 white_scale = float3(1.0f, 1.0f, 1.0f) / uncharted2_tonemap_partial(W);
+                return curr * white_scale;
+            }
+
             FSInput VS_Main (VSInput input) //Vertex shader main
             {
                 FSInput output;
@@ -196,6 +217,9 @@ Shader "Unlit/CloudRenderer"
                     clip(-1);
                 
                 outputColor.rgb /= outputColor.a;
+
+                //outputColor.rgb = tonemap_filmic(outputColor.rgb, _Exposure);  
+                
                 outputColor = clamp(outputColor, 0, 1);
 
                 return outputColor;

@@ -17,6 +17,8 @@ float _LightAbsorptionCoefficient;
 float _MinDensity;
 float _MaxDensity;
 
+float _Opacity;
+
 SamplerState sampler_linear_repeat;
 
 //It controls given ray intersects with box (x: distance to box, y: distance inside box)
@@ -70,7 +72,7 @@ void LightMarch(uint3 id : SV_DispatchThreadID) {
 			float density = CloudData.SampleLevel(sampler_linear_repeat, texCoord, 0).r;
 
 			if (density >= _MinDensity && density <= _MaxDensity) {  
-				intensity = intensity * exp(_LightMarchStepSize * _LightAbsorptionCoefficient * -0.01f);
+				intensity = intensity * exp(_LightMarchStepSize * _LightAbsorptionCoefficient * _Opacity * -0.01f);
 			}
 			
 			offset += _LightMarchStepSize;

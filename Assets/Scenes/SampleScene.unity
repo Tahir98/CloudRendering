@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.7798838, g: 0.7240371, b: 0.7350674, a: 1}
+  m_IndirectSpecularColor: {r: 0.7370702, g: 0.7895078, b: 0.846144, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -156,13 +156,16 @@ MonoBehaviour:
   - offset: {x: 35.4, y: 25.3, z: 16.01}
     scale: 6.11
     opacity: 0.487
+    noiseType: 0
   - offset: {x: 20.86, y: 19.59, z: 9.65}
     scale: 34.6
     opacity: -0.115
+    noiseType: 1
   - offset: {x: 20.86, y: 19.59, z: 9.65}
     scale: 92.9
     opacity: -0.08
-  NoiseGenerator: {fileID: 7200000, guid: 906d049d6f4874041b8b3ea5e8ad62b7, type: 3}
+    noiseType: 1
+  NoiseGenerator: {fileID: 7200000, guid: 00223f321de656c4190fcefb56fe757f, type: 3}
   LightIntensityCalculator: {fileID: 7200000, guid: 3cbb31e2067ee7340bdb5fdad2dc1bc4, type: 3}
   cloudSize: {x: 250, y: 50, z: 250}
   textureFitSize: {x: 250, y: 50, z: 250}
@@ -176,13 +179,14 @@ MonoBehaviour:
   material: {fileID: 2100000, guid: 4a37491b7c3233a4587f067f473c97ea, type: 2}
   minDensity: 0.069
   maxDensity: 1
-  stepSize: 0.2
+  stepSize: 0.6
   opacity: 0.746
   opacityThreshold: 0.96
   UpdateTextures: 0
   LightMarchStepSize: 0.1
   LightBaseIntensity: 0.2
-  LightAbsorptionCoefficient: 1.46
+  LightAbsorptionCoefficient: 0.9
+  exposure: 2
   lightObject: {fileID: 705507993}
   simpleNoiseTex: {fileID: 0}
 --- !u!4 &283614413
@@ -193,7 +197,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 283614411}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.6456035, y: 2.4106596, z: 1.5124345}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -331,7 +335,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -353,7 +357,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 1000
+  far clip plane: 10000
   field of view: 60
   orthographic: 0
   orthographic size: 5
@@ -400,4 +404,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sensivity: 0.175
-  camSpeed: 50
+  camSpeed: 150
