@@ -19,12 +19,12 @@ float _MaxDensity;
 
 float _Opacity;
 
-SamplerState sampler_linear_repeat;
+SamplerState sampler_linear_mirror;
 
 //It controls given ray intersects with box (x: distance to box, y: distance inside box)
-float2 RayIntersectAABB(float3 rayOrigin, float3 rayDir, float3 boundsMin, float3 boundsMax) {
+float2 RayIntersectAABB(float3 rayOrigin, float3 rayDirection, float3 boundsMin, float3 boundsMax) {
 
-	float3 invRayDir = 1.0f / rayDir;
+	float3 invRayDir = 1.0f / rayDirection;
 
 	float3 t0 = (boundsMin - rayOrigin) * invRayDir;
 	float3 t1 = (boundsMax - rayOrigin) * invRayDir;
@@ -40,6 +40,22 @@ float2 RayIntersectAABB(float3 rayOrigin, float3 rayDir, float3 boundsMin, float
 	return float2(dstToBox, dstInsideBox);
 }
 
+float RayIntersectPlane(float3 rayOrigin, float3 rayDirection, float3 planePos, float3 planeNormal) {
+	float distance = -1;
+	
+	float3 direction = planePos - rayOrigin;
+	float closestDistance = dot(planeNormal, direction);
+	
+	if(closestDistance < 0)
+		closestDistance *= -1.0f;
+	
+	float cosAngle = abs(dot(planeNormal, normalize(rayDirection)));
+	
+	distance = closestDistance / cosAngle;
+	
+	return distance;
+}
+
 float3 GetPositionFromId(uint3 id) {
 	return _BoundMin + (_BoundMax - _BoundMin) * float3(id.x / (float) _TexSize.x, id.y / (float) _TexSize.y, id.z / (float) _TexSize.z);
 }
@@ -53,23 +69,31 @@ void LightMarch(uint3 id : SV_DispatchThreadID) {
 	if (any(id >= _TexSize))
 		return;
 	
+	if (dot(_LightDirection * -1, float3(0, 1, 0)) <= 0) {
+		CopyTex[id] = 1;
+		return;
+	}
+	
 	float3 startPosition = GetPositionFromId(id);
 	
-	float2 hit = RayIntersectAABB(startPosition, _LightDirection * -1, _BoundMin + float3(-10, 0, -10), _BoundMax + float3(10, 0, 10));
+	float3 planeCenter = (_BoundMax - _BoundMin) / 2.0f;
+	planeCenter.y = _BoundMax.y;
+	
+	float distance = RayIntersectPlane(startPosition, _LightDirection * -1, planeCenter, float3(0, 1, 0));
 	
 	float intensity = 1;
 	
-	if (hit.y > 0)
+	if (distance > 0)
 	{
 		float offset = 0;
 		
 		[loop]
-		while (offset < hit.y) {
+		while (offset < distance) {
 			
 			float3 position = startPosition + _LightDirection * offset * -1.0f;
 			float3 texCoord = GetTextureCoordinate(position);
 
-			float density = CloudData.SampleLevel(sampler_linear_repeat, texCoord, 0).r;
+			float density = CloudData.SampleLevel(sampler_linear_mirror, texCoord, 0).r;
 
 			if (density >= _MinDensity && density <= _MaxDensity) {  
 				intensity = intensity * exp(_LightMarchStepSize * _LightAbsorptionCoefficient * _Opacity * -0.01f);

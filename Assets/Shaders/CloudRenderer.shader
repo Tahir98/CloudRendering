@@ -62,8 +62,6 @@ Shader "Unlit/CloudRenderer"
             float _LightBaseIntensity;
             float _LightAbsorptionCoefficient;
 
-            float _Exposure;
-
             float2 SampleDensity(float3 texCoord) {
                 return tex3D(_DensityTex, texCoord).rg;
             }

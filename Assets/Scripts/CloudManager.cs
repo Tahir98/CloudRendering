@@ -51,15 +51,11 @@ public class CloudManager : MonoBehaviour {
     public float LightBaseIntensity = 0.2f;
     public float LightAbsorptionCoefficient = 0.01f; 
 
-    public float exposure = 2;
-
     public GameObject lightObject;
 
     private MeshFilter meshFilter;
     private MeshRenderer meshRenderer;
     private Mesh mesh;
-
-    public Texture2D simpleNoiseTex;
 
     void Start() {
         layerBuffer = new ComputeBuffer(20, 6 * sizeof(float));
@@ -249,7 +245,5 @@ public class CloudManager : MonoBehaviour {
         material.SetFloat("_LightMarchStepSize", LightMarchStepSize);
         material.SetFloat("_LightBaseIntensity", LightBaseIntensity);
         material.SetFloat("_LightAbsorptionCoefficient", LightAbsorptionCoefficient);
-
-        material.SetFloat("_Exposure", exposure);
     }
 }
