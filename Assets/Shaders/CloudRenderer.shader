@@ -40,6 +40,7 @@ Shader "Unlit/CloudRenderer"
             float4 _MainTex_ST;
 
             sampler3D _DensityTex;
+            sampler3D _DetailTex;
             sampler2D _NoiseTex;
 
             float _StepSize;
@@ -62,8 +63,29 @@ Shader "Unlit/CloudRenderer"
             float _LightBaseIntensity;
             float _LightAbsorptionCoefficient;
 
-            float2 SampleDensity(float3 texCoord) {
-                return tex3D(_DensityTex, texCoord).rg;
+            float2 SampleDensity(float3 texCoord, float3 position) {
+                float2 data  = tex3D(_DensityTex, texCoord).rg;
+
+                float3 size = _BoundMax - _BoundMin;
+                float detailTexFitSize = min(min(size.x, size.y), size.z);
+                float3 detailTexCoord = (position - _BoundMin) / detailTexFitSize;
+                float detailDensity = tex3D(_DetailTex, detailTexCoord).r;
+                data.x *= (detailDensity * 0.8f + 0.2f); 
+
+                float fadeDistanceHorizontal = 120; 
+                float fadeDistanceVertical =  100; 
+                float dstFromEdgeX = min(fadeDistanceHorizontal, min(position.x - _BoundMin.x, _BoundMax.x - position.x));
+                float dstFromEdgeZ = min(fadeDistanceHorizontal, min(position.z - _BoundMin.z, _BoundMax.z - position.z));
+                float edgeWeightHorizontal = min(dstFromEdgeX, dstFromEdgeZ) / fadeDistanceHorizontal;
+                edgeWeightHorizontal = clamp(edgeWeightHorizontal, 0, 1);
+
+                float dstFromEdgeY = min(fadeDistanceVertical, min(position.y - _BoundMin.y, _BoundMax.y - position.y));
+                float edgeWeightVertical = clamp(dstFromEdgeY / fadeDistanceVertical, 0, 1);
+
+                float edgeWeight = min(edgeWeightHorizontal, edgeWeightVertical);
+
+                data.x *= edgeWeight;
+                return data;
             }
 
             float3 GetTextureCoordinate(float3 position) {
@@ -124,7 +146,7 @@ Shader "Unlit/CloudRenderer"
                         float3 pos = position + direction * offset;
 
                         float3 texCoord = GetTextureCoordinate(pos);
-                        float density = SampleDensity(texCoord);
+                        float density = SampleDensity(texCoord, pos);
 
                         if(InRange(density, _MinDensity, _MaxDensity)) {
                             intensity = intensity * exp(stepSize * _LightAbsorptionCoefficient * -1.0f);
@@ -192,7 +214,7 @@ Shader "Unlit/CloudRenderer"
                         float3 position = cameraPos + viewDir * (hit.x + offset);
                         float3 texcoord = GetTextureCoordinate(position);
                     
-                        float2 data  = SampleDensity(texcoord);
+                        float2 data  = SampleDensity(texcoord, position);
                         float density = data.x;
                         float lightIntensity = data.y;
 

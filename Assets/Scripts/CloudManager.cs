@@ -17,6 +17,9 @@ public class CloudManager : MonoBehaviour {
     public List<NoiseLayer> noiseLayers;
     private ComputeBuffer layerBuffer;
 
+    public List<NoiseLayer> noiseLayers2;
+    private ComputeBuffer layerBuffer2;
+
     public ComputeShader NoiseGenerator;
     public ComputeShader LightIntensityCalculator;
 
@@ -31,6 +34,8 @@ public class CloudManager : MonoBehaviour {
 
     [SerializeField]
     RenderTexture DensityTexture = null;
+    [SerializeField]
+    RenderTexture DetailTexture = null;
 
     public Texture2D NoiseTexture = null;
 
@@ -59,6 +64,7 @@ public class CloudManager : MonoBehaviour {
 
     void Start() {
         layerBuffer = new ComputeBuffer(20, 6 * sizeof(float));
+        layerBuffer2 = new ComputeBuffer(20, 6 * sizeof(float));
 
         mesh = CreateMesh();
         meshFilter = gameObject.AddComponent<MeshFilter>();
@@ -132,20 +138,25 @@ public class CloudManager : MonoBehaviour {
         textureSize.y = Mathf.CeilToInt(texSize * textureFitSize.y / maxBoundSize);
         textureSize.z = Mathf.CeilToInt(texSize * textureFitSize.z / maxBoundSize);
 
+        //Density Texture
         DensityTexture = new RenderTexture(textureSize.x, textureSize.y,0, RenderTextureFormat.RG32, 0);
         DensityTexture.volumeDepth = textureSize.z;
         DensityTexture.enableRandomWrite = true;
         DensityTexture.dimension = UnityEngine.Rendering.TextureDimension.Tex3D;
-        //DensityTexture.graphicsFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.R32G32_SFloat;
-
-        //DensityTexture.useMipMap = true;
         DensityTexture.wrapMode = TextureWrapMode.Mirror;
         DensityTexture.filterMode = FilterMode.Trilinear;
         DensityTexture.autoGenerateMips = false;
 
-        DensityTexture.Create();
+        //Detail Texture
+        DetailTexture = new RenderTexture(128, 128, 0, RenderTextureFormat.R8, 0);
+        DetailTexture.volumeDepth = 128;
+        DetailTexture.enableRandomWrite = true;
+        DetailTexture.dimension = UnityEngine.Rendering.TextureDimension.Tex3D;
+        DetailTexture.wrapMode = TextureWrapMode.Mirror;
+        DetailTexture.filterMode = FilterMode.Trilinear;
+        DetailTexture.autoGenerateMips = false;
 
-
+        //Noise Texture
         NoiseTexture = new Texture2D(32, 32, TextureFormat.R8, false);
         NoiseTexture.filterMode = FilterMode.Point;
         NoiseTexture.wrapMode = TextureWrapMode.Repeat;
@@ -172,9 +183,22 @@ public class CloudManager : MonoBehaviour {
 
             NoiseGenerator.Dispatch(kernelIndex, texSize / 4 + 1, texSize / 4 + 1, texSize / 4 + 1);
 
+        }
 
+        if (kernelIndex != -1) {
+            int tSize = 128;
+
+            layerBuffer2.SetData(noiseLayers2.ToArray());
+
+            NoiseGenerator.SetTexture(kernelIndex, "VolumeTex", DetailTexture);
+            NoiseGenerator.SetBuffer(kernelIndex, "noiseLayers", layerBuffer2);
+            NoiseGenerator.SetInt("layerCount", noiseLayers2.Count);
+            NoiseGenerator.SetInts("texSize", tSize, tSize, tSize);
+
+            NoiseGenerator.Dispatch(kernelIndex, tSize / 4 + 1, tSize / 4 + 1, tSize / 4 + 1);
         }
     }
+
 
     private void CalculateLightIntensity() {
         int kernelIndex = LightIntensityCalculator.FindKernel("LightMarch");
@@ -224,6 +248,7 @@ public class CloudManager : MonoBehaviour {
 
     void SetMaterialProperties() {
         material.SetTexture("_DensityTex", DensityTexture);
+        material.SetTexture("_DetailTex", DetailTexture);
         material.SetTexture("_NoiseTex", NoiseTexture);
 
         material.SetFloat("_StepSize", stepSize);
