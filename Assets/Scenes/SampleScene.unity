@@ -160,21 +160,27 @@ MonoBehaviour:
   - offset: {x: 20.86, y: 19.59, z: 9.65}
     scale: 34.6
     opacity: -0.115
-    noiseType: 1
+    noiseType: 0
   - offset: {x: 20.86, y: 19.59, z: 9.65}
-    scale: 92.9
+    scale: 61.9
     opacity: -0.08
+    noiseType: 0
+  noiseLayers2:
+  - offset: {x: 0, y: 0, z: 0}
+    scale: 38.3
+    opacity: 0.24
     noiseType: 1
   NoiseGenerator: {fileID: 7200000, guid: 00223f321de656c4190fcefb56fe757f, type: 3}
   LightIntensityCalculator: {fileID: 7200000, guid: 3cbb31e2067ee7340bdb5fdad2dc1bc4, type: 3}
-  cloudSize: {x: 250, y: 50, z: 250}
-  textureFitSize: {x: 250, y: 50, z: 250}
-  texSize: 512
+  cloudSize: {x: 1000, y: 200, z: 1000}
+  textureFitSize: {x: 500, y: 200, z: 500}
+  texSize: 64
   textureSize: {x: 0, y: 0, z: 0}
   textureOffset: {x: 0, y: 0, z: 0}
   Animate: 1
   animationSpeed: {x: 10, y: 0, z: -10}
   DensityTexture: {fileID: 0}
+  DetailTexture: {fileID: 0}
   NoiseTexture: {fileID: 0}
   material: {fileID: 2100000, guid: 4a37491b7c3233a4587f067f473c97ea, type: 2}
   minDensity: 0.069
@@ -186,9 +192,7 @@ MonoBehaviour:
   LightMarchStepSize: 0.1
   LightBaseIntensity: 0.2
   LightAbsorptionCoefficient: 0.9
-  exposure: 2
   lightObject: {fileID: 705507993}
-  simpleNoiseTex: {fileID: 0}
 --- !u!4 &283614413
 Transform:
   m_ObjectHideFlags: 0

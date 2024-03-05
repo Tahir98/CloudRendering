@@ -216,7 +216,7 @@ Shader "Unlit/CloudRenderer"
                     
                         float2 data  = SampleDensity(texcoord, position);
                         float density = data.x;
-                        float lightIntensity = data.y;
+                        float lightIntensity = data.y * 2;
 
                         if (InRange(density, _MinDensity, _MaxDensity)) {
                         
